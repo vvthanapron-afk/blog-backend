@@ -62,10 +62,10 @@ router.get('/', async (req, res) => {
       data: {
         posts: postsResult.rows,
         pagination: {
-          total,                                    // Total number of posts
-          page,                                     // Current page number
-          limit,                                    // Number of posts per page
-          totalPages: Math.ceil(total / limit)      // Total number of pages
+          total,                                    
+          page,                                     
+          limit,                                    
+          totalPages: Math.ceil(total / limit)      
         }
       }
     });
