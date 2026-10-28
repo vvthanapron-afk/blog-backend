@@ -1,6 +1,6 @@
 // =============================================================================
-// 博客系统后端主入口文件
-// Express 应用配置和路由注册
+// Main entry point for the blog backend
+// Configure Express and register routes
 // =============================================================================
 
 const express = require('express');
@@ -9,46 +9,46 @@ const path = require('path');
 const { testConnection } = require('./config/db');
 require('dotenv').config();
 
-// 导入路由模块
+// Import route modules
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
 
-// 创建 Express 应用实例
+// Create the Express application
 const app = express();
 
 // ---------------------------------------------------------------------------
-// 中间件配置
+// Middleware configuration
 // ---------------------------------------------------------------------------
 
-// CORS 跨域配置
-// 允许前端（Vue）访问后端 API
+// CORS configuration
+// Allow the Vue frontend to call the backend API
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',  // 前端地址
-  credentials: true,                                           // 允许携带认证信息
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],                  // 允许的 HTTP 方法
-  allowedHeaders: ['Content-Type', 'Authorization']           // 允许的头信息
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',  
+  credentials: true,                                           
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],                  
+  allowedHeaders: ['Content-Type', 'Authorization']           
 }));
 
-// 解析 JSON 格式的请求体
-// 限制请求体大小为 10MB，防止大文件攻击
+// Parse JSON request bodies
+// Limit request bodies to 10 MB
 app.use(express.json({ limit: '10mb' }));
 
-// 解析 URL 编码格式的请求体（表单提交）
+// Parse URL-encoded form data
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 请求日志中间件
-// 在控制台打印每个请求的方法、URL 和时间戳
+// Request logging middleware
+// Log the method, URL, and timestamp for each request
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
 // ---------------------------------------------------------------------------
-// 路由注册
+// Route registration
 // ---------------------------------------------------------------------------
 
-// 健康检查接口（无需认证）
-// 用于监控和负载均衡器检测服务状态
+// Public health check endpoint
+// Report service status for monitoring
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
@@ -57,24 +57,24 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 认证相关路由
-// 所有以 /api/auth 开头的请求都会路由到 authRoutes
+// Authentication routes
+// Forward requests starting with /api/auth to authRoutes
 app.use('/api/auth', authRoutes);
 
-// 文章相关路由
-// 所有以 /api/posts 开头的请求都会路由到 postRoutes
+// Post routes
+// Forward requests starting with /api/posts to postRoutes
 app.use('/api/posts', postRoutes);
 
 // ---------------------------------------------------------------------------
-// 静态文件服务
-// 提供前端构建后的静态文件
+// Static file serving
+// Serve the built frontend files
 // ---------------------------------------------------------------------------
 const clientDistPath = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientDistPath));
 
-// 对于所有非 API 路由，返回 index.html（支持 Vue Router 的 history 模式）
+// Return index.html for non-API routes to support Vue Router history mode
 app.get('*', (req, res, next) => {
-  // 如果是 API 请求，跳过，交给后面的 404 处理
+  // Pass API requests to the API not-found handler below
   if (req.path.startsWith('/api/')) {
     return next();
   }
@@ -83,8 +83,8 @@ app.get('*', (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------------
-// 404 处理
-// 当请求的路由不存在时，返回 404 错误
+// 404 handler
+// Return 404 when no endpoint matches the request
 // ---------------------------------------------------------------------------
 app.use((req, res) => {
   res.status(404).json({
@@ -94,46 +94,46 @@ app.use((req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// 全局错误处理中间件
-// 捕获所有未处理的错误，防止应用崩溃
+// Global error-handling middleware
+// Handle errors passed to Express error middleware
 // ---------------------------------------------------------------------------
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(err.status || 500).json({
     success: false,
-    message: err.message ||'Internal server eeror'
+    message: err.message ||'Internal server error'
   });
 });
 
 // ---------------------------------------------------------------------------
-// 启动服务器
+// Start the server
 // ---------------------------------------------------------------------------
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {
-    // 先测试数据库连接
+    // Test the database connection before starting
     await testConnection();
 
-    // 启动 HTTP 服务器
+    // Start the HTTP server
     app.listen(PORT, () => {
       console.log('='.repeat(60));
-      console.log('🚀 blog backend server started');
+      console.log('🚀 Blog backend server started');
       console.log(`📡 Server: http://localhost:${PORT}`);
       console.log(`🔗 Health Check: http://localhost:${PORT}/api/health`);
       console.log('='.repeat(60));
     });
   } catch (error) {
     console.error('Failed to start the server:', error);
-    process.exit(1); // 启动失败，退出进程
+    process.exit(1); // Exit the process if startup fails
   }
 }
 
 startServer();
 
 // ---------------------------------------------------------------------------
-// 优雅关闭
-// 当接收到 SIGINT 信号（Ctrl+C）时，先关闭服务器再退出
+// Shutdown handler
+// Exit when SIGINT (Ctrl+C) is received
 // ---------------------------------------------------------------------------
 process.on('SIGINT', () => {
   console.log('\nShutting down the server...');
