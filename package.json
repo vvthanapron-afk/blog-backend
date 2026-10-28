@@ -1,7 +1,7 @@
 {
   "name": "blog-server",
   "version": "1.0.0",
-  "description": "博客系统后端服务 - Express + PostgreSQL",
+  "description": "Blog backend service - Express + PostgreSQL",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
