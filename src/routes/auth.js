@@ -1,6 +1,6 @@
 // =============================================================================
-// 认证相关路由
-// 处理管理员登录、登出等认证操作
+// Authentication routes
+// Handle administrator login, account information, and password changes
 // =============================================================================
 
 const express = require('express');
@@ -11,63 +11,63 @@ const { pool } = require('../config/db');
 require('dotenv').config();
 
 // ---------------------------------------------------------------------------
-// POST /api/auth/login - 管理员登录
-// 验证用户名和密码，成功则返回 JWT token
+// POST /api/auth/login - Administrator login
+// Verify the username and password, then return a JWT
 // ---------------------------------------------------------------------------
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // 参数验证：确保用户名和密码都已提供
+    // Validate that both username and password are provided
     if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: '用户名和密码不能为空'
+        message: 'Username and password are required'
       });
     }
 
-    // 从数据库中查询用户信息
-    // 使用参数化查询防止 SQL 注入攻击
+    // Query the user information from the database
+    // Use a parameterized query to prevent SQL injection
     const userResult = await pool.query(
       'SELECT id, username, password, email FROM admins WHERE username = $1',
       [username]
     );
 
-    // 检查用户是否存在
+    // Check whether the user exists
     if (userResult.rows.length === 0) {
       return res.status(401).json({
         success: false,
-        message: '用户名或密码错误'
+        message: 'Invalid username or password'
       });
     }
 
     const user = userResult.rows[0];
 
-    // 验证密码
-    // 使用 bcrypt 比较用户输入的密码和数据库中存储的哈希值
+    // Verify the password
+    // Use bcrypt to compare the supplied password with the stored hash
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({
         success: false,
-        message: '用户名或密码错误'
+        message: 'Invalid username or password'
       });
     }
 
-    // 密码验证成功，生成 JWT token
-    // token 中包含用户 ID 和用户名，有效期为 24 小时
+    // Generate a JWT after password verification succeeds
+    // Include the user ID and username; the default token lifetime is 24 hours
     const token = jwt.sign(
       { id: user.id, username: user.username },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
 
-    // 返回登录成功响应
+    // Return the successful login response
     res.json({
       success: true,
-      message: '登录成功',
+      message: 'Login successful',
       data: {
-        token,                                    // JWT token，前端需要保存并在后续请求中携带
+        token,                                    // The frontend stores this JWT and includes it in later requests
         user: {
           id: user.id,
           username: user.username,
@@ -77,35 +77,35 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('登录失败:', error);
+    console.error('Login failed:', error);
     res.status(500).json({
       success: false,
-      message: '服务器错误，请稍后重试'
+      message: 'Internal server error. Please try again later.'
     });
   }
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/auth/me - 获取当前登录用户信息
-// 需要认证（携带有效的 JWT token）
+// GET /api/auth/me - Get the current user's information
+// Require a valid JWT
 // ---------------------------------------------------------------------------
 router.get('/me', async (req, res) => {
   try {
-    // 从请求头中提取并验证 token
+    // Extract and verify the token from the request headers
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: '未登录'
+        message: 'Please log in first'
       });
     }
 
-    // 验证 token 并提取用户信息
+    // Verify the token and decode the user information
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 从数据库中查询用户最新信息
+    // Query the user's latest information from the database
     const userResult = await pool.query(
       'SELECT id, username, email, created_at FROM admins WHERE id = $1',
       [decoded.id]
@@ -114,7 +114,7 @@ router.get('/me', async (req, res) => {
     if (userResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: '用户不存在'
+        message: 'User not found'
       });
     }
 
@@ -124,50 +124,50 @@ router.get('/me', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('获取用户信息失败:', error);
+    console.error('Failed to fetch user information:', error);
     res.status(500).json({
       success: false,
-      message: '服务器错误'
+      message: 'Internal server error'
     });
   }
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/auth/change-password - 修改密码
-// 需要认证
+// POST /api/auth/change-password - Change password
+// Authentication required
 // ---------------------------------------------------------------------------
 router.post('/change-password', async (req, res) => {
   try {
-    // 验证用户身份
+    // Verify the user's identity
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: '未登录'
+        message: 'Please log in first'
       });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const { oldPassword, newPassword } = req.body;
 
-    // 参数验证
+    // Validate the request body
     if (!oldPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: '旧密码和新密码不能为空'
+        message: 'Current and new passwords are required'
       });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({
         success: false,
-        message: '新密码长度不能少于 6 位'
+        message: 'The new password must be at least 6 characters long'
       });
     }
 
-    // 查询用户当前密码
+    // Query the user's current password hash
     const userResult = await pool.query(
       'SELECT password FROM admins WHERE id = $1',
       [decoded.id]
@@ -175,16 +175,16 @@ router.post('/change-password', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // 验证旧密码
+    // Verify the current password
     const isValidOldPassword = await bcrypt.compare(oldPassword, user.password);
     if (!isValidOldPassword) {
       return res.status(400).json({
         success: false,
-        message: '旧密码错误'
+        message: 'The current password is incorrect'
       });
     }
 
-    // 加密新密码并更新数据库
+    // Hash the new password and update the database
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
@@ -195,19 +195,19 @@ router.post('/change-password', async (req, res) => {
 
     res.json({
       success: true,
-      message: '密码修改成功'
+      message: 'Password changed successfully'
     });
 
   } catch (error) {
-    console.error('修改密码失败:', error);
+    console.error('Failed to change password:', error);
     res.status(500).json({
       success: false,
-      message: '服务器错误'
+      message: 'Internal server error'
     });
   }
 });
 
 // ---------------------------------------------------------------------------
-// 导出路由
+// Export the router
 // ---------------------------------------------------------------------------
 module.exports = router;
