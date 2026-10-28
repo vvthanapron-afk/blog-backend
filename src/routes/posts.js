@@ -15,10 +15,10 @@ const { authenticateToken } = require('../middleware/auth');
 router.get('/', async (req, res) => {
   try {
     // Read pagination parameters and apply defaults
-    const page = parseInt(req.query.page) || 1;          // Current page; defaults to page 1
-    const limit = parseInt(req.query.limit) || 10;       // Posts per page; defaults to 10
-    const offset = (page - 1) * limit;                   // Calculate the pagination offset
-    const status = req.query.status;                     // Optional status filter
+    const page = parseInt(req.query.page) || 1;         
+    const limit = parseInt(req.query.limit) || 10;       
+    const offset = (page - 1) * limit;                   
+    const status = req.query.status;                     
 
     // Build the query
     let query = `
