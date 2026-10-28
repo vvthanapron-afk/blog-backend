@@ -1,54 +1,54 @@
 // =============================================================================
-// JWT 认证中间件
-// 用于验证用户登录状态和保护需要认证的路由
+// JWT authentication middleware
+// Verify authentication and protect routes that require a valid token
 // =============================================================================
 
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 // ---------------------------------------------------------------------------
-// JWT 认证中间件函数
-// 从请求头中提取 token 并验证
+// JWT authentication handler
+// Extract and verify the token from the request headers
 // ---------------------------------------------------------------------------
 function authenticateToken(req, res, next) {
-  // 从 Authorization 头中提取 token
-  // 格式：Bearer <token>
+  // Read the token from the Authorization header
+  // Format: Bearer <token>
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // 提取 token 部分
+  const token = authHeader && authHeader.split(' ')[1]; // Extract the token value
 
-  // 如果没有提供 token，返回 401 未授权
+  // Return 401 when no token is provided
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: '未提供认证令牌，请先登录'
+      message: 'No authentication token was provided. Please log in.'
     });
   }
 
-  // 验证 token 的有效性
+  // Verify the token
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
-      // token 无效或已过期
+      // The token is invalid or expired
       if (err.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,
-          message: '认证令牌已过期，请重新登录'
+          message: 'Your session has expired. Please log in again.'
         });
       }
       return res.status(403).json({
         success: false,
-        message: '无效的认证令牌'
+        message: 'Invalid authentication token'
       });
     }
 
-    // token 验证成功，将用户信息附加到请求对象
-    // 后续的路由处理器可以通过 req.user 访问用户信息
+    // Attach the decoded user information to the request after verification
+    // Route handlers can access the user information through req.user
     req.user = user;
-    next(); // 继续执行下一个中间件或路由处理器
+    next(); // Continue to the next middleware or route handler
   });
 }
 
 // ---------------------------------------------------------------------------
-// 导出中间件函数
+// Export the middleware functions
 // ---------------------------------------------------------------------------
 module.exports = {
   authenticateToken
