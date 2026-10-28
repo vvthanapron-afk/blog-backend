@@ -1,43 +1,43 @@
 // =============================================================================
-// 数据库连接配置模块
-// 使用 pg 库连接 PostgreSQL 数据库
+// Database connection configuration
+// Use pg to connect to PostgreSQL
 // =============================================================================
 
 const { Pool } = require('pg');
 require('dotenv').config();
 
 // ---------------------------------------------------------------------------
-// 创建数据库连接池
-// 连接池可以复用数据库连接，提高性能
+// Create the database connection pool
+// Reuse database connections through the pool
 // ---------------------------------------------------------------------------
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',           // 数据库主机地址
-  port: parseInt(process.env.DB_PORT) || 5432,        // 数据库端口
-  user: process.env.DB_USER || 'blog_admin',          // 数据库用户名
-  password: process.env.DB_PASSWORD || 'blog_secret', // 数据库密码
-  database: process.env.DB_NAME || 'blog_db',         // 数据库名称
-  max: 20,                                             // 连接池最大连接数
-  idleTimeoutMillis: 30000,                            // 空闲连接超时时间（30秒）
-  connectionTimeoutMillis: 2000,                       // 连接超时时间（2秒）
+  host: process.env.DB_HOST || 'localhost',           // Database host
+  port: parseInt(process.env.DB_PORT) || 5432,        // Database port
+  user: process.env.DB_USER || 'blog_admin',          // Database username
+  password: process.env.DB_PASSWORD || 'blog_secret', // Database password
+  database: process.env.DB_NAME || 'blog_db',         // Database name
+  max: 20,                                             // Maximum number of pooled connections
+  idleTimeoutMillis: 30000,                            // Idle connection timeout (30 seconds)
+  connectionTimeoutMillis: 2000,                       // Connection timeout (2 seconds)
 });
 
 // ---------------------------------------------------------------------------
-// 测试数据库连接
-// 在应用启动时验证数据库是否可用
+// Test the database connection
+// Check database availability when the application starts
 // ---------------------------------------------------------------------------
 async function testConnection() {
   try {
     const client = await pool.connect();
-    console.log('✅ 数据库连接成功');
-    client.release(); // 释放连接回连接池
+    console.log('✅ Database connection successful');
+    client.release(); // Return the connection to the pool
   } catch (error) {
-    console.error('❌ 数据库连接失败:', error.message);
+    console.error('❌ Database connection failed:', error.message);
     throw error;
   }
 }
 
 // ---------------------------------------------------------------------------
-// 导出连接池和测试函数
+// Export the pool and connection test function
 // ---------------------------------------------------------------------------
 module.exports = {
   pool,
